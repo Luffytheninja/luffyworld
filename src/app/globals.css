@@ -1,0 +1,214 @@
+@import "tailwindcss";
+
+@theme {
+  /* Brutalist Industrial Palette */
+  --color-concrete: #2B2B2B;
+  --color-charcoal: #1C1C1C;
+  --color-neon-cyan: #0FF;
+  --color-neon-yellow: #FF0;
+  --color-bone: #E5E5E5;
+  --color-smoke: #3A3A3A;
+
+  /* Legacy mappings for compatibility */
+  --color-surface: #1C1C1C;
+  --color-ink: #E5E5E5;
+  --color-accent: #0FF;
+
+  /* Typography */
+  --font-headline: "Outfit", system-ui, sans-serif;
+  --font-body: "IBM Plex Mono", monospace;
+  --font-sans: "Outfit", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+
+  --spacing-grid: 1rem;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    overflow-x: hidden;
+  }
+
+  body {
+    background-color: var(--color-charcoal);
+    color: var(--color-bone);
+    font-family: var(--font-body);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-headline);
+    @apply font-bold tracking-tight;
+  }
+
+  h1 {
+    @apply text-4xl md:text-6xl lg:text-7xl;
+  }
+
+  h2 {
+    @apply text-2xl md:text-4xl;
+  }
+
+  h3 {
+    @apply text-xl md:text-2xl;
+  }
+
+  ::selection {
+    background-color: var(--color-neon-cyan);
+    color: var(--color-charcoal);
+  }
+}
+
+@layer components {
+
+  /* Navigation links */
+  .nav-link {
+    @apply font-mono text-xs uppercase tracking-widest transition-colors duration-300;
+    color: var(--color-bone);
+  }
+
+  .nav-link:hover {
+    color: var(--color-neon-cyan);
+  }
+
+  /* Section labels */
+  .section-label {
+    @apply font-mono text-xs uppercase tracking-widest opacity-60;
+  }
+
+  /* Page titles */
+  .page-title {
+    font-family: var(--font-headline);
+    @apply text-3xl md:text-5xl font-bold;
+  }
+
+  /* Body copy styling */
+  .body-copy {
+    @apply font-mono text-sm md:text-base leading-relaxed opacity-80;
+    max-width: 42ch;
+  }
+
+  /* Transition classes for 3D staging */
+  .asset-enter {
+    animation: assetEnter 800ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
+  }
+
+  .asset-exit {
+    animation: assetExit 600ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
+  }
+
+  .copy-fade-in {
+    animation: copyFadeIn 600ms ease-out forwards;
+    animation-delay: 400ms;
+    opacity: 0;
+  }
+
+  .copy-fade-out {
+    animation: copyFadeOut 400ms ease-in forwards;
+  }
+
+  /* Neon glow effects */
+  .neon-glow-cyan {
+    text-shadow: 0 0 10px var(--color-neon-cyan), 0 0 20px var(--color-neon-cyan), 0 0 40px var(--color-neon-cyan);
+  }
+
+  .neon-glow-yellow {
+    text-shadow: 0 0 10px var(--color-neon-yellow), 0 0 20px var(--color-neon-yellow), 0 0 40px var(--color-neon-yellow);
+  }
+}
+
+/* Keyframe animations */
+@keyframes assetEnter {
+  from {
+    opacity: 0;
+    transform: translateZ(-50px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateZ(0);
+  }
+}
+
+@keyframes assetExit {
+  from {
+    opacity: 1;
+    transform: translateZ(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateZ(-50px);
+  }
+}
+
+@keyframes copyFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes copyFadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+/* Loader animation */
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+.loader-pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* Custom scrollbar - minimal */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-charcoal);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-smoke);
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-neon-cyan);
+}
+
+/* Mobile touch improvements */
+@media (hover: none) and (pointer: coarse) {
+  .nav-link:active {
+    color: var(--color-neon-cyan);
+  }
+}
