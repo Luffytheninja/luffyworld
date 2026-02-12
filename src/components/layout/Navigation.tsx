@@ -12,7 +12,7 @@ interface NavigationProps {
 
 export default function Navigation({ variant = 'fixed' }: NavigationProps) {
     const [isOpen, setIsOpen] = useState(false);
-    const { currentSection } = useSceneStore();
+    const { currentSection, performanceMode, togglePerformanceMode } = useSceneStore();
 
     const toggleMenu = () => setIsOpen(!isOpen);
 
@@ -87,6 +87,14 @@ export default function Navigation({ variant = 'fixed' }: NavigationProps) {
                                     </Link>
                                 </motion.div>
                             ))}
+
+                            <button
+                                type="button"
+                                onClick={togglePerformanceMode}
+                                className="mt-2 rounded border border-bone/30 px-3 py-2 font-mono text-xs uppercase tracking-wider text-bone/80 transition-colors hover:border-neon-cyan hover:text-neon-cyan"
+                            >
+                                Performance mode: {performanceMode ? 'On' : 'Off'}
+                            </button>
                         </motion.div>
 
                         {/* Footer info */}
