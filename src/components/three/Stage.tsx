@@ -1,11 +1,12 @@
 'use client';
 
-import { Suspense, useRef, useEffect, useState } from 'react';
+import { Suspense, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useGLTF, OrbitControls, Environment, Float, Html, ContactShadows, useAnimations } from '@react-three/drei';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { useSceneStore, Asset3D } from '@/store/useSceneStore';
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 // Loader component shown while 3D assets are loading
 function Loader() {
@@ -27,8 +28,7 @@ interface ModelProps {
 
 function Model({ asset, isActive }: ModelProps) {
     const { scene, animations } = useGLTF(asset.path);
-    const { ref, mixer, names, actions } = useAnimations(animations);
-    const groupRef = useRef<THREE.Group>(null);
+    const { ref, names, actions } = useAnimations(animations);
     const { viewport } = useThree();
 
     // Auto-scaling and centering logic
@@ -191,7 +191,67 @@ export default function Stage({ className = '', enableOrbit = false }: StageProp
     );
 }
 
-// Preload utility for assets
-export function preloadAsset(path: string) {
-    useGLTF.preload(path);
+const PRELOAD_TIMEOUT_MS = 15000;
+const PRELOAD_MAX_RETRIES = 2;
+const PRELOAD_BASE_BACKOFF_MS = 400;
+
+export interface AssetPreloadResult {
+    ok: boolean;
+    path: string;
+    attempts: number;
+    error?: Error;
+}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, path: string): Promise<T> {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    const timeoutPromise = new Promise<T>((_, reject) => {
+        timeoutId = setTimeout(() => {
+            reject(new Error(`Timed out after ${timeoutMs}ms while preloading ${path}`));
+        }, timeoutMs);
+    });
+
+    try {
+        return await Promise.race([promise, timeoutPromise]);
+    } finally {
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+        }
+    }
+}
+
+// Preload utility for assets with retry/backoff so one broken file won't block app entry.
+export async function preloadAsset(path: string): Promise<AssetPreloadResult> {
+    const loader = new GLTFLoader();
+    let attempts = 0;
+    let lastError: Error | undefined;
+
+    while (attempts <= PRELOAD_MAX_RETRIES) {
+        attempts += 1;
+
+        try {
+            await withTimeout(loader.loadAsync(path), PRELOAD_TIMEOUT_MS, path);
+            return {
+                ok: true,
+                path,
+                attempts,
+            };
+        } catch (error) {
+            lastError = error instanceof Error ? error : new Error(String(error));
+
+            if (attempts > PRELOAD_MAX_RETRIES) {
+                break;
+            }
+
+            const retryDelay = PRELOAD_BASE_BACKOFF_MS * (2 ** (attempts - 1));
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+        }
+    }
+
+    return {
+        ok: false,
+        path,
+        attempts,
+        error: lastError,
+    };
 }
