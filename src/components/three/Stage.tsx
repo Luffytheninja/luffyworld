@@ -202,6 +202,9 @@ export interface AssetPreloadResult {
     error?: Error;
 }
 
+const loader = new GLTFLoader();
+const inflightPreloads = new Map<string, Promise<AssetPreloadResult>>();
+
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, path: string): Promise<T> {
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
@@ -222,36 +225,50 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, path: stri
 
 // Preload utility for assets with retry/backoff so one broken file won't block app entry.
 export async function preloadAsset(path: string): Promise<AssetPreloadResult> {
-    const loader = new GLTFLoader();
-    let attempts = 0;
-    let lastError: Error | undefined;
-
-    while (attempts <= PRELOAD_MAX_RETRIES) {
-        attempts += 1;
-
-        try {
-            await withTimeout(loader.loadAsync(path), PRELOAD_TIMEOUT_MS, path);
-            return {
-                ok: true,
-                path,
-                attempts,
-            };
-        } catch (error) {
-            lastError = error instanceof Error ? error : new Error(String(error));
-
-            if (attempts > PRELOAD_MAX_RETRIES) {
-                break;
-            }
-
-            const retryDelay = PRELOAD_BASE_BACKOFF_MS * (2 ** (attempts - 1));
-            await new Promise(resolve => setTimeout(resolve, retryDelay));
-        }
+    const existingPreload = inflightPreloads.get(path);
+    if (existingPreload) {
+        return existingPreload;
     }
 
-    return {
-        ok: false,
-        path,
-        attempts,
-        error: lastError,
-    };
+    const preloadPromise = (async (): Promise<AssetPreloadResult> => {
+        let attempts = 0;
+        let lastError: Error | undefined;
+
+        while (attempts <= PRELOAD_MAX_RETRIES) {
+            attempts += 1;
+
+            try {
+                await withTimeout(loader.loadAsync(path), PRELOAD_TIMEOUT_MS, path);
+                return {
+                    ok: true,
+                    path,
+                    attempts,
+                };
+            } catch (error) {
+                lastError = error instanceof Error ? error : new Error(String(error));
+
+                if (attempts > PRELOAD_MAX_RETRIES) {
+                    break;
+                }
+
+                const retryDelay = PRELOAD_BASE_BACKOFF_MS * (2 ** (attempts - 1));
+                await new Promise(resolve => setTimeout(resolve, retryDelay));
+            }
+        }
+
+        return {
+            ok: false,
+            path,
+            attempts,
+            error: lastError,
+        };
+    })();
+
+    inflightPreloads.set(path, preloadPromise);
+
+    try {
+        return await preloadPromise;
+    } finally {
+        inflightPreloads.delete(path);
+    }
 }
