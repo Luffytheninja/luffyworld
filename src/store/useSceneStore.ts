@@ -22,12 +22,17 @@ interface SceneState {
     currentSection: string;
     scrollProgress: number;
 
+    // Manual performance override
+    performanceMode: boolean;
+
     // Actions
     setActiveAsset: (asset: Asset3D | null) => void;
     setLoading: (loading: boolean, progress?: number) => void;
     setTransitioning: (transitioning: boolean) => void;
     setCurrentSection: (section: string) => void;
     setScrollProgress: (progress: number) => void;
+    setPerformanceMode: (enabled: boolean) => void;
+    togglePerformanceMode: () => void;
 
     // Transition with cleanup
     transitionToAsset: (newAsset: Asset3D | null) => Promise<void>;
@@ -40,6 +45,7 @@ export const useSceneStore = create<SceneState>((set, get) => ({
     isTransitioning: false,
     currentSection: 'loader',
     scrollProgress: 0,
+    performanceMode: false,
 
     setActiveAsset: (asset) => set({ activeAsset: asset }),
 
@@ -53,6 +59,10 @@ export const useSceneStore = create<SceneState>((set, get) => ({
     setCurrentSection: (section) => set({ currentSection: section }),
 
     setScrollProgress: (progress) => set({ scrollProgress: progress }),
+
+    setPerformanceMode: (enabled) => set({ performanceMode: enabled }),
+
+    togglePerformanceMode: () => set((state) => ({ performanceMode: !state.performanceMode })),
 
     // Critical: Ensures previous asset is fully unmounted before new one loads
     transitionToAsset: async (newAsset) => {

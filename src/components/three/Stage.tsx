@@ -1,9 +1,9 @@
 'use client';
 
-import { Suspense, useRef, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useGLTF, OrbitControls, Environment, Float, Html, ContactShadows, useAnimations } from '@react-three/drei';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { useSceneStore, Asset3D } from '@/store/useSceneStore';
 import * as THREE from 'three';
 
@@ -27,8 +27,7 @@ interface ModelProps {
 
 function Model({ asset, isActive }: ModelProps) {
     const { scene, animations } = useGLTF(asset.path);
-    const { ref, mixer, names, actions } = useAnimations(animations);
-    const groupRef = useRef<THREE.Group>(null);
+    const { ref, names, actions } = useAnimations(animations);
     const { viewport } = useThree();
 
     // Auto-scaling and centering logic
@@ -103,19 +102,57 @@ interface StageProps {
     enableOrbit?: boolean;
 }
 
+function detectLowTierDevice() {
+    if (typeof window === 'undefined') return false;
+
+    const viewportWidth = window.innerWidth;
+    const isSmallViewport = viewportWidth < 1024;
+    const ua = navigator.userAgent.toLowerCase();
+    const isMobileUA = /android|iphone|ipad|ipod|mobile|blackberry|opera mini|iemobile/.test(ua);
+    const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8;
+    const cores = navigator.hardwareConcurrency ?? 8;
+    const isLowMemory = memory <= 4;
+    const isLowCpu = cores <= 4;
+
+    return isSmallViewport || isMobileUA || isLowMemory || isLowCpu;
+}
+
 export default function Stage({ className = '', enableOrbit = false }: StageProps) {
-    const { activeAsset, isTransitioning } = useSceneStore();
+    const { activeAsset, isTransitioning, performanceMode } = useSceneStore();
+    const [isAutoLowTier, setIsAutoLowTier] = useState(detectLowTierDevice);
+
+    useEffect(() => {
+        const frameId = window.requestAnimationFrame(() => {
+            setIsAutoLowTier(detectLowTierDevice());
+        });
+
+        const handleResize = () => {
+            setIsAutoLowTier(detectLowTierDevice());
+        };
+
+        window.addEventListener('resize', handleResize);
+
+        return () => {
+            window.cancelAnimationFrame(frameId);
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
+
+    const isLowTier = performanceMode || isAutoLowTier;
+    const dprRange: [number, number] = isLowTier ? [1, 1.25] : [1, 2];
+    const ambientIntensity = isLowTier ? 0.5 : 0.4;
+    const spotIntensity = isLowTier ? 1.2 : 2;
 
     return (
         <div className={`w-full h-full ${className}`}>
             <Canvas
-                shadows
+                shadows={!isLowTier}
                 camera={{ position: [0, 0, 5], fov: 45 }}
-                dpr={[1, 2]}
+                dpr={dprRange}
                 gl={{
-                    antialias: true,
+                    antialias: !isLowTier,
                     alpha: true,
-                    powerPreference: 'high-performance',
+                    powerPreference: isLowTier ? 'default' : 'high-performance',
                     toneMapping: THREE.ACESFilmicToneMapping,
                     toneMappingExposure: 1.2,
                 }}
@@ -123,38 +160,42 @@ export default function Stage({ className = '', enableOrbit = false }: StageProp
                 <CameraController />
 
                 {/* Lighting setup for premium industrial feel */}
-                <ambientLight intensity={0.4} />
+                <ambientLight intensity={ambientIntensity} />
                 <spotLight
                     position={[10, 10, 10]}
                     angle={0.15}
                     penumbra={1}
-                    intensity={2}
-                    castShadow
+                    intensity={spotIntensity}
+                    castShadow={!isLowTier}
                 />
                 <pointLight
                     position={[-10, -10, -10]}
-                    intensity={1}
+                    intensity={isLowTier ? 0.7 : 1}
                     color="#0FF"
                 />
 
                 {/* Secondary accent light */}
-                <pointLight
-                    position={[5, 0, 5]}
-                    intensity={0.5}
-                    color="#FF0"
-                />
+                {!isLowTier && (
+                    <pointLight
+                        position={[5, 0, 5]}
+                        intensity={0.5}
+                        color="#FF0"
+                    />
+                )}
 
                 {/* Environment for physically based rendering reflections */}
-                <Environment preset="city" />
+                <Environment preset={isLowTier ? 'studio' : 'city'} />
 
                 {/* Contact shadows for grounding objects */}
-                <ContactShadows
-                    position={[0, -1.5, 0]}
-                    opacity={0.4}
-                    scale={10}
-                    blur={2.5}
-                    far={4}
-                />
+                {!isLowTier && (
+                    <ContactShadows
+                        position={[0, -1.5, 0]}
+                        opacity={0.4}
+                        scale={10}
+                        blur={2.5}
+                        far={4}
+                    />
+                )}
 
                 {enableOrbit && (
                     <OrbitControls
