@@ -1,5 +1,5 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('fs');
-const path = require('path');
 
 const rawAssets = JSON.parse(fs.readFileSync('src/data/raw-assets.json', 'utf8'));
 const rawHeros = JSON.parse(fs.readFileSync('src/data/raw-heros.json', 'utf8'));

@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 import { HERO_ASSETS } from '@/data/assets';
 
@@ -33,7 +33,7 @@ export default function HeroPng({ index = 0, className = "" }: { index?: number,
                     animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : 10 }}
                     className="absolute -bottom-10 left-1/2 -translate-x-1/2 whitespace-nowrap bg-ink text-surface px-3 py-1 text-[8px] font-mono uppercase tracking-[0.2em] pointer-events-none"
                 >
-                    Artifact.0{index + 1} // Input_Detected
+                    {`Artifact.0${index + 1} // Input_Detected`}
                 </motion.div>
             </div>
 
