@@ -1,5 +1,4 @@
-const fs = require('fs');
-const path = require('path');
+import fs from 'node:fs';
 
 const rawAssets = JSON.parse(fs.readFileSync('src/data/raw-assets.json', 'utf8'));
 const rawHeros = JSON.parse(fs.readFileSync('src/data/raw-heros.json', 'utf8'));
@@ -26,13 +25,13 @@ const getBreadcrumbs = (fullPath) => {
     return [];
 };
 
-const assets = rawAssets.map(a => ({
+const assets = rawAssets.map((a) => ({
     Name: a.Name,
     path: transformPath(a.FullName),
     breadcrumbs: getBreadcrumbs(a.FullName)
 }));
 
-const heros = rawHeros.map(h => ({
+const heros = rawHeros.map((h) => ({
     Name: h.Name,
     path: transformPath(h.FullName)
 }));

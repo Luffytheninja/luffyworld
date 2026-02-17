@@ -1,9 +1,9 @@
 'use client';
 
-import { Suspense, useRef, useEffect, useState } from 'react';
+import { Suspense, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useGLTF, OrbitControls, Environment, Float, Html, ContactShadows, useAnimations } from '@react-three/drei';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { useSceneStore, Asset3D } from '@/store/useSceneStore';
 import * as THREE from 'three';
 
@@ -27,8 +27,7 @@ interface ModelProps {
 
 function Model({ asset, isActive }: ModelProps) {
     const { scene, animations } = useGLTF(asset.path);
-    const { ref, mixer, names, actions } = useAnimations(animations);
-    const groupRef = useRef<THREE.Group>(null);
+    const { ref, names, actions } = useAnimations(animations);
     const { viewport } = useThree();
 
     // Auto-scaling and centering logic

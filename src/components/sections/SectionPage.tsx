@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { motion, useScroll } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { useSceneStore, ASSET_REGISTRY, Asset3D } from '@/store/useSceneStore';
+import { useSceneStore, ASSET_REGISTRY } from '@/store/useSceneStore';
 import { SectionData, SECTIONS } from '@/data/sections';
 import Navigation from '@/components/layout/Navigation';
 
@@ -26,11 +26,11 @@ export default function SectionPage({ sectionId }: SectionPageProps) {
     const [currentAssetIndex, setCurrentAssetIndex] = useState(0);
     const [showCopy, setShowCopy] = useState(false);
 
-    const { transitionToAsset, setCurrentSection, activeAsset } = useSceneStore();
+    const { transitionToAsset, setCurrentSection } = useSceneStore();
 
     // Get section data
     const section = SECTIONS.find(s => s.id === sectionId) as SectionData;
-    const assets = ASSET_REGISTRY[sectionId] || [];
+    const assets = useMemo(() => ASSET_REGISTRY[sectionId] || [], [sectionId]);
 
     // Get next section for navigation
     const currentSectionIndex = SECTIONS.findIndex(s => s.id === sectionId);
@@ -81,14 +81,19 @@ export default function SectionPage({ sectionId }: SectionPageProps) {
         if (assets[0]) {
             transitionToAsset(assets[0]);
             setCurrentSection(sectionId);
-            setTimeout(() => setShowCopy(true), 800);
+            const timer = setTimeout(() => setShowCopy(true), 800);
+
+            return () => {
+                clearTimeout(timer);
+                transitionToAsset(null);
+            };
         }
 
         // Cleanup on unmount
         return () => {
             transitionToAsset(null);
         };
-    }, []);
+    }, [assets, sectionId, setCurrentSection, transitionToAsset]);
 
     // Calculate scroll height based on number of assets
     const scrollHeight = `${100 + (assets.length - 1) * 100}vh`;
