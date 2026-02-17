@@ -37,20 +37,24 @@ function Model({ asset, isActive }: ModelProps) {
             const box = new THREE.Box3().setFromObject(ref.current);
             const size = box.getSize(new THREE.Vector3());
             const center = box.getCenter(new THREE.Vector3());
+            const focusTarget = asset.target
+                ? new THREE.Vector3(...asset.target)
+                : center;
 
-            // Center the model
-            ref.current.position.x += (ref.current.position.x - center.x);
-            ref.current.position.y += (ref.current.position.y - center.y);
-            ref.current.position.z += (ref.current.position.z - center.z);
+            // Center the model using metadata target when provided
+            ref.current.position.x += (ref.current.position.x - focusTarget.x);
+            ref.current.position.y += (ref.current.position.y - focusTarget.y);
+            ref.current.position.z += (ref.current.position.z - focusTarget.z);
 
-            // Scale to fit viewport
+            // Scale to fit viewport with optional metadata multiplier
             const maxDim = Math.max(size.x, size.y, size.z);
             const isMobile = viewport.width < 6;
             const targetSize = isMobile ? 2.5 : 3.5;
-            const scale = targetSize / maxDim;
+            const metadataScale = asset.scaleMultiplier ?? 1;
+            const scale = (targetSize / maxDim) * metadataScale;
             ref.current.scale.setScalar(scale);
         }
-    }, [ref, viewport.width]);
+    }, [asset.scaleMultiplier, asset.target, ref, viewport.width]);
 
     // Play animations if they exist
     useEffect(() => {
@@ -86,10 +90,13 @@ function CameraController() {
 
     useEffect(() => {
         if (activeAsset) {
-            // Smoothly move camera to default position
+            const [x, y, z] = activeAsset.cameraPosition ?? [0, 0, 5];
+            const [targetX, targetY, targetZ] = activeAsset.target ?? [0, 0, 0];
+
+            // Smoothly move camera to asset-specific/default position
             // In a real app we might want to animate this with gsap or framer-motion-3d
-            camera.position.set(0, 0, 5);
-            camera.lookAt(0, 0, 0);
+            camera.position.set(x, y, z);
+            camera.lookAt(targetX, targetY, targetZ);
         }
     }, [activeAsset, camera]);
 

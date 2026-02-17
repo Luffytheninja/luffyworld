@@ -5,6 +5,9 @@ export interface Asset3D {
     path: string;
     name: string;
     section: 'homepage' | 'altered-state' | 'music' | 'bass-fantasy' | 'tech-fantasy' | 'anime';
+    cameraPosition?: [number, number, number];
+    target?: [number, number, number];
+    scaleMultiplier?: number;
 }
 
 interface SceneState {
@@ -95,16 +98,40 @@ export const ASSET_REGISTRY: Record<string, Asset3D[]> = {
         { id: 'walkman', path: '/assets/3d/walkman.glb', name: 'Walkman', section: 'music' },
     ],
     'bass-fantasy': [
-        { id: 'marceline-bass', path: '/assets/3d/marcelines_ax_bass.glb', name: "Marceline's Ax Bass", section: 'bass-fantasy' },
+        {
+            id: 'marceline-bass',
+            path: '/assets/3d/marcelines_ax_bass.glb',
+            name: "Marceline's Ax Bass",
+            section: 'bass-fantasy',
+            cameraPosition: [0, 0.25, 6.25],
+            target: [0, 0.1, 0],
+            scaleMultiplier: 0.85,
+        },
         { id: 'fender-amp', path: '/assets/3d/fender_bass_amp.glb', name: 'Fender Bass Amp', section: 'bass-fantasy' },
     ],
     'tech-fantasy': [
         { id: 'retro-camera', path: '/assets/3d/canon_at-1_retro_camera.glb', name: 'Canon AT-1 Camera', section: 'tech-fantasy' },
         { id: 'cyberpunk-laptop', path: '/assets/3d/cyberpunk_laptop_concept_design.glb', name: 'Cyberpunk Laptop', section: 'tech-fantasy' },
-        { id: 'sony-playstation', path: '/assets/3d/sony_pvm-1341__sony_playstation.glb', name: 'Sony PVM & PlayStation', section: 'tech-fantasy' },
+        {
+            id: 'sony-playstation',
+            path: '/assets/3d/sony_pvm-1341__sony_playstation.glb',
+            name: 'Sony PVM & PlayStation',
+            section: 'tech-fantasy',
+            cameraPosition: [0, 0.4, 5.5],
+            target: [0, 0.2, 0],
+            scaleMultiplier: 0.9,
+        },
     ],
     'anime': [
         { id: 'aot-sword', path: '/assets/3d/attack_on_titan_gear_sword_-_low_poly.glb', name: 'ODM Gear Sword', section: 'anime' },
-        { id: 'colossal-titan', path: '/assets/3d/colossal_titan.glb', name: 'Colossal Titan', section: 'anime' },
+        {
+            id: 'colossal-titan',
+            path: '/assets/3d/colossal_titan.glb',
+            name: 'Colossal Titan',
+            section: 'anime',
+            cameraPosition: [0, 1.25, 8.5],
+            target: [0, 1, 0],
+            scaleMultiplier: 0.55,
+        },
     ],
 };
