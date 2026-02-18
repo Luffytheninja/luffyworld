@@ -12,9 +12,12 @@ interface PreloaderProps {
 export default function Preloader({ onComplete }: PreloaderProps) {
     const [progress, setProgress] = useState(0);
     const [isComplete, setIsComplete] = useState(false);
+    const [failedAssets, setFailedAssets] = useState<Array<{ id: string; path: string; error: string }>>([]);
     const { setLoading, setCurrentSection } = useSceneStore();
 
     useEffect(() => {
+        let isMounted = true;
+
         const preloadAllAssets = async () => {
             // Get all asset paths
             const allAssets = Object.values(ASSET_REGISTRY).flat();
@@ -23,17 +26,33 @@ export default function Preloader({ onComplete }: PreloaderProps) {
 
             // Preload each asset sequentially to avoid GPU overload
             for (const asset of allAssets) {
-                try {
-                    preloadAsset(asset.path);
-                    loadedCount++;
-                    setProgress(Math.round((loadedCount / totalAssets) * 100));
-                    // Small delay between loads for smoother experience
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                } catch (error) {
-                    console.warn(`Failed to preload ${asset.path}:`, error);
-                    loadedCount++;
-                    setProgress(Math.round((loadedCount / totalAssets) * 100));
+                const result = await preloadAsset(asset.path);
+
+                if (!isMounted) {
+                    return;
                 }
+
+                if (!result.ok) {
+                    const errorMessage = result.error?.message ?? 'Unknown preload error';
+                    const failure = { id: asset.id, path: asset.path, error: errorMessage };
+
+                    console.error(
+                        `[Preloader] Failed to preload asset id="${asset.id}" path="${asset.path}" after ${result.attempts} attempts`,
+                        result.error
+                    );
+
+                    setFailedAssets((previous) => [...previous, failure]);
+                }
+
+                loadedCount++;
+                setProgress(Math.round((loadedCount / totalAssets) * 100));
+
+                // Small delay between loads for smoother experience
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+
+            if (!isMounted) {
+                return;
             }
 
             // Complete loading
@@ -42,11 +61,20 @@ export default function Preloader({ onComplete }: PreloaderProps) {
 
             // Wait for exit animation then call onComplete
             await new Promise(resolve => setTimeout(resolve, 1000));
+
+            if (!isMounted) {
+                return;
+            }
+
             setCurrentSection('homepage');
             onComplete();
         };
 
         preloadAllAssets();
+
+        return () => {
+            isMounted = false;
+        };
     }, [onComplete, setLoading, setCurrentSection]);
 
     return (
@@ -89,6 +117,21 @@ export default function Preloader({ onComplete }: PreloaderProps) {
                         <span className="font-mono text-xs text-bone opacity-40">
                             {progress}%
                         </span>
+
+                        {failedAssets.length > 0 && (
+                            <div className="max-w-md text-left border border-red-500/30 bg-red-900/20 p-3 rounded-sm">
+                                <p className="font-mono text-[10px] uppercase tracking-wide text-red-200 mb-2">
+                                    Some assets failed to preload ({failedAssets.length})
+                                </p>
+                                <ul className="space-y-1">
+                                    {failedAssets.map((asset) => (
+                                        <li key={asset.id} className="font-mono text-[10px] text-red-100 break-all">
+                                            <span className="text-red-300">{asset.id}</span>: {asset.path} ({asset.error})
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
                     </motion.div>
 
                     {/* Decorative elements */}
